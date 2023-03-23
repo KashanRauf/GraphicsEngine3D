@@ -1,0 +1,5 @@
+3D graphics don't exist, one of the major roles of the engine is to take a 3D object and turn it into 2D shapes.
+
+Most (or maybe all) faces consist of triangles that group up vertices. They can represent anything due to their simplicity and being all straight lines.
+
+Convert vertices in 3D space to 2D surfaces of triangles
