@@ -1,12 +1,16 @@
 import java.util.ArrayList;
 
 /**
- * A mesh of triangles, forms a shape.
+ * A mesh of triangles, forms planes/shapes.
  */
 public class Mesh {
-    ArrayList<Triangle> triangles;
+    private ArrayList<Triangle> triangles;
 
     public Mesh() {
         triangles = new ArrayList<>();
+    }
+
+    public void add(Triangle tri) {
+        triangles.add(tri);
     }
 }
