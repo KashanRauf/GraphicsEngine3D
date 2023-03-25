@@ -1,5 +1,66 @@
 3D graphics don't exist, one of the major roles of the engine is to take a 3D object and turn it into 2D shapes.
-
 Most (or maybe all) faces consist of triangles that group up vertices. They can represent anything due to their simplicity and being all straight lines.
-
 Convert vertices in 3D space to 2D surfaces of triangles
+
+Have found a way to express 3D objects (Meshes of triangles defined by points in 3D space)
+
+How do I take that and convert it to a graphic in 2D?
+Projection: Converting 3D object to 2D
+Also referred to as mapping or transforming object into projection/view plane
+An orthographic view is a 2D view of a 3D object, will be using orthographic projection
+
+Orthographic projection is a generalization of view volume
+Orthographic view volume is a volume can be in any location or scale but retains shape/orientation
+Need to transform this to the canonical view volume (what we will see)
+    Translate center orthographic view volume to origin
+    Tranform to scale dimensions to match
+
+
+Our field of view through a monitor is a square frustum (square, depth increases range)
+This frustum must first be transformed into the orthographic view volume
+    This is how the object is transformed into an orthographic view
+    This takes a lot of linear algebra that I do not know enough of yet
+    The transformation is performed by the "perspective matrix"
+The objects have their height and width adjusted based on distances
+Anything outside of the frustum may as well not exist
+
+Visible height = (distance to screen / distance to object) * actual height = (n/z)*y
+Works the same for width
+https://www.youtube.com/watch?v=U0_ONQQ5ZNM
+
+How to develop a perspective matrix?
+    4x4 Matrix, when applied to a position vector [x, y, z, 1] through multiplication
+    result is [(n/z)x, (n/z)y, z, 1]
+Not possible without homogeneous coordinates
+    So far, homogeneous vector's 4th val is constant to 1, allowing for translations
+    Let 4th val = w -> [x, y, z, w], position vector = [x/w, y/w, z/w]
+    Now any homogeneous vector: [1,2,3,1] = [10,20,30,10] = [2,4,6,2] = Position of [1,2,3]
+    Now make the solution's w = z:
+        Original [(n/z)x, (n/z)y, z, 1]
+        New [nx, ny, ?, z]
+
+Further development of matrix
+Scale the x and y by distance to viewing plane -> multiply x and y by n
+4th val (w) is just equal to z
+1st | n 0 0 0 | |x|       |nx |
+2nd | 0 n 0 0 | |y|  --\  |ny |
+3rd | ? ? ? ? | |z|  --/  |z^2|
+4th | 0 0 1 0 | |1|       | z |
+
+What about 3rd row? Not 0010, everything gets divided by w 
+w= z -> z/z=1 -> Loss of depth (what is in front of what?)
+    Solution must be z^2
+
+3rd | 0 0 b c | -> bz + c = z^2, z=n or z=f (not the viewing or far plane's distance)
+bn+c = n^2 -> b = f+n 
+bf+c = f^2 -> c = -fn
+3rd | 0 0 (f+n) -fn | |z| = z^2 = (f+n)z -fn
+    This no longer preserves the relative z values, but still retains ordering
+    Which is fine for our purposes
+
+When this matrix is multiplied by the orthographic projection matrix we get
+the perspective projection matrix, the overall matrix to put objects in perspective
+TIMESTAMP 11:54-END
+
+After applying the matrix to a vector you get the new X and Y coords, for 2D, Z only for depth
+Need to adjust coordinate system so axis matches variables
