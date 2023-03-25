@@ -4,7 +4,7 @@ import java.util.ArrayList;
  * A mesh of triangles, forms planes/shapes.
  */
 public class Mesh {
-    private ArrayList<Triangle> triangles;
+    public ArrayList<Triangle> triangles;
 
     public Mesh() {
         triangles = new ArrayList<>();
