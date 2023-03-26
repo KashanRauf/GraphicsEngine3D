@@ -31,4 +31,8 @@ public class Vector3D {
     public float getZ() {
         return z;
     }
+
+    public float[] toArray() {
+        return new float[] {x, y, z, 1};
+    }
 }
