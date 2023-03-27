@@ -2,7 +2,6 @@
  * Represents a point/vector in 3D space
  * Currently does nothing other than hold the data
  */
-@SuppressWarnings("unused")
 public class Vector3D {
     private float x;
     private float y;
