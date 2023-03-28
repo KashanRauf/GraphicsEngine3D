@@ -5,6 +5,9 @@ import java.awt.Graphics2D;
 import java.awt.geom.Path2D;
 import javax.swing.JPanel;
 
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+
 // Setting up graphics and GUI
 public class Engine extends JPanel {
     // ONLY HERE FOR TEST PURPOSES
@@ -22,6 +25,11 @@ public class Engine extends JPanel {
     private float T = -1*B;
     private float N = 100.0f;
     private float F = 1000.0f;
+
+    private float rotateX = WIDTH / 2;
+    private float rotateY = HEIGHT / 2;
+    private float angleX = 180.0f;
+    private float angleY = 180.0f;
 
     // Perspective projection matrix
     private float[][] mat = new float[][] {
@@ -48,6 +56,7 @@ public class Engine extends JPanel {
 
     public Engine() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        setBackground(Color.BLACK);
 
         // MOST CODE AFTER THIS POINT IS FOR TESTING PURPOSES
 
@@ -60,13 +69,13 @@ public class Engine extends JPanel {
         // Creating a basic shape, a cube bounded by (0,0,0) and (1,1,1)
         cube = new Mesh();
         Vector3D a = new Vector3D(0f, 0f, 0); // At origin
-        Vector3D b = new Vector3D(0f, 100f, 0f); // 1 above origin
-        Vector3D c = new Vector3D(100f, 0f, 0f); // 1 to right of origin
-        Vector3D d = new Vector3D(0f, 0f, 100f); // 1 ahead of origin (in reality high z = further = behind)
-        Vector3D e = new Vector3D(0f, 100f, 100f);
-        Vector3D f = new Vector3D(100f, 0f, 100f);
-        Vector3D g = new Vector3D(100f, 100f, 0f);
-        Vector3D h = new Vector3D(100f, 100f, 100f); // Furthest from origin of given points
+        Vector3D b = new Vector3D(0f, 200f, 0f); // Above origin
+        Vector3D c = new Vector3D(200f, 0f, 0f); // To right of origin
+        Vector3D d = new Vector3D(0f, 0f, 50f); // Ahead of origin (in reality high z = further = behind)
+        Vector3D e = new Vector3D(0f, 200f, 50f);
+        Vector3D f = new Vector3D(200f, 0f, 50f);
+        Vector3D g = new Vector3D(200f, 200f, 0f);
+        Vector3D h = new Vector3D(200f, 200f, 50f); // Furthest from origin of given points
 
         // Makes the planes as illustrated in Meshes.png
         cube.add(new Triangle(a, b, g));
@@ -87,22 +96,54 @@ public class Engine extends JPanel {
 
         cube.add(new Triangle(f, d, e));
         cube.add(new Triangle(f, e, h));
+
+        // Tracks motion when dragging mouse
+        addMouseMotionListener(new MouseMotionListener() {
+            // Allows for rotation
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                int dragX = e.getX();
+                int dragY = e.getY();
+                System.out.println("Drag: (" + dragX + ", " + dragY + ")");
+                rotateX += dragX-rotateX > 0 ? .02 : -.02;
+                rotateY += dragY-rotateY > 0 ? .02 : -.02;
+                System.out.println("Rotation values: (" + rotateX + ", " + rotateY + ")");
+                angleX = (float) (rotateX*360) / WIDTH;
+                angleY = (float) (rotateY*360) / HEIGHT;
+                System.out.println("In degrees : (" + ((float)rotateX/WIDTH)*360 + ", " + ((float)rotateY/HEIGHT)*360 + ")");
+                System.out.println(angleX + " " + angleY);
+
+                repaint();
+            }
+
+            // Does nothing
+            @Override
+            public void mouseMoved(MouseEvent e) {};
+        });
     }
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2D = (Graphics2D) g;
+
+        // Sets the rotation matrix
+        float[][] rotation = multiplyMatrix(matrixYZ(), matrixXZ());
+
         // Axis lines
         g2D.setColor(Color.GREEN);
         g2D.drawLine(WIDTH/2, 0, WIDTH/2, HEIGHT);
         g2D.drawLine(0, HEIGHT/2, WIDTH, HEIGHT/2);
 
         g2D.translate(WIDTH/2, HEIGHT/2);
-        g2D.setColor(Color.BLACK);
+        g2D.setColor(Color.WHITE);
         for (Triangle cur : cube.triangles) {
-            float[] a = calculatePoint(cur.vectors[0].toArray());
-            float[] b = calculatePoint(cur.vectors[1].toArray());
-            float[] c = calculatePoint(cur.vectors[2].toArray());
+            float[] a = multiplyVector(mat, cur.vectors[0].toArray());
+            float[] b = multiplyVector(mat, cur.vectors[1].toArray());
+            float[] c = multiplyVector(mat, cur.vectors[2].toArray());
+            a = multiplyVector(rotation, new float[] {a[0], a[1], a[2]});
+            b = multiplyVector(rotation, new float[] {b[0], b[1], b[2]});
+            c = multiplyVector(rotation, new float[] {c[0], c[1], c[2]});
+
 
             // Draws the triangle
             Path2D line = new Path2D.Float();
@@ -115,13 +156,52 @@ public class Engine extends JPanel {
     }
 
     // Uses matrix multiplication to perspective project a point
-    public float[] calculatePoint(float[] p) {
-        float[] projectedPoint = new float[] {
-            mat[0][0]*p[0] + mat[0][1]*p[1] + mat[0][2]*p[2] + mat[0][3]*p[3],
-            mat[1][0]*p[0] + mat[1][1]*p[1] + mat[1][2]*p[2] + mat[1][3]*p[3],
-            mat[2][0]*p[0] + mat[2][1]*p[1] + mat[2][2]*p[2] + mat[2][3]*p[3],
-            mat[3][0]*p[0] + mat[3][1]*p[1] + mat[3][2]*p[2] + mat[3][3]*p[3]
+    public float[] multiplyVector(float[][] mat, float[] p) {
+        // float[] projectedPoint = new float[] {
+        //     mat[0][0]*p[0] + mat[0][1]*p[1] + mat[0][2]*p[2] + mat[0][3]*p[3],
+        //     mat[1][0]*p[0] + mat[1][1]*p[1] + mat[1][2]*p[2] + mat[1][3]*p[3],
+        //     mat[2][0]*p[0] + mat[2][1]*p[1] + mat[2][2]*p[2] + mat[2][3]*p[3],
+        //     mat[3][0]*p[0] + mat[3][1]*p[1] + mat[3][2]*p[2] + mat[3][3]*p[3]
+        // };
+        // Assumes that cols of mat == rows of p
+        float[] result = new float[p.length];
+        for (int i = 0; i < mat[0].length; i++) {
+            for (int j = 0; j < p.length; j++) {
+                result[i] += mat[i][j] * p[j];
+            }
+        }
+        return result;
+    }
+
+    public float[][] multiplyMatrix(float[][] a, float[][] b) {
+        float[][] result = new float[a.length][b[0].length];
+
+        for (int i = 0; i < a.length; i++) {
+            for (int j = 0; j < b[0].length; j++) {
+                for (int k = 0; k < a.length; k++) {
+                    result[i][j] += a[i][k] * b[k][j];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public float[][] matrixXZ() {
+        float[][] matrix = new float[][] {
+            {(float) Math.cos(angleX), 0f, (float) (-1 * Math.sin(angleX))},
+            {0, 1, 0},
+            {(float) Math.sin(angleX), 0, (float) Math.cos(angleX)}
         };
-        return projectedPoint;
+        return matrix;
+    }
+
+    public float[][] matrixYZ() {
+        float[][] matrix = new float[][] {
+            {1, 0 , 0},
+            {0, (float) Math.cos(angleY), (float) Math.sin(angleY)},
+            {0, (float) (-1 * Math.sin(angleY)), (float) Math.cos(angleY)}
+        };
+        return matrix;
     }
 }
